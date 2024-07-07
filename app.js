@@ -20,6 +20,10 @@ app.use(cookieParser());
 
 app.use(router)
 
+app.get('/', (req, res) => {
+  res.send('<h1> Hello world </h1>');
+});
+
 // 500 error handler
 app.use((err, req, res, next) => {
   console.log(err);
