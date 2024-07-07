@@ -1,0 +1,229 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              Int            @id @default(autoincrement())
+  fullName        String?        @map("full_name")
+  familyName      String?        @map("family_name")
+  phoneNumber     String?        @map("phone_number")
+  email           String         @unique
+  password        String?
+  identityType    String?        @map("identity_type")
+  identityNumber  String?        @map("identity_number")
+  nationality     String?
+  emailIsVerified Boolean        @default(false) @map("email_isverified")
+  googleId        String?
+  role            Role           @default(USER)
+  booking         Booking[]
+  otp             Otp?
+  notification    Notification[]
+
+  @@map("users")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Booking {
+  id                Int            @id @default(autoincrement())
+  bookingCode       String         @map("booking_code")
+  status            String         @default("UNPAID")
+  expiredPaid       DateTime       @map("expired_paid")
+  createdAt         DateTime       @map("created_at")
+  totalPrice        Float          @map("total_price")
+  bookingTax        Float          @map("booking_tax")
+  donation          Float          @default(0)
+  urlPayment        String?        @map("url_payment")
+  departureTicket   Ticket         @relation("departureTicket", fields: [departureTicketId], references: [id])
+  departureTicketId Int            @map("departure_ticket_id")
+  returnTicket      Ticket?        @relation("returnTicket", fields: [returnTicketId], references: [id])
+  returnTicketId    Int?           @map("return_ticket_id")
+  user              User           @relation(fields: [userId], references: [id])
+  userId            Int            @map("user_id")
+  isRoundTrip       Boolean        @default(false) @map("is_round_trip")
+  passenger         Passenger[]
+  Payment           Payment[]
+  Notification      Notification[]
+
+  @@map("bookings")
+}
+
+model Otp {
+  id        Int      @id @default(autoincrement())
+  code      String
+  createdAt DateTime @map("created_at")
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int      @unique @map("user_id")
+
+  @@map("otp")
+}
+
+model Notification {
+  id        Int               @id @default(autoincrement())
+  title     String
+  message   String
+  type      NotificationType?
+  createdAt DateTime          @map("created_at")
+  user      User              @relation(fields: [userId], references: [id])
+  userId    Int               @map("user_id")
+  booking   Booking?          @relation(fields: [bookingId], references: [id])
+  bookingId Int?              @map("booking_id")
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  transaction
+  promo
+  general
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  name      String
+  paidAt    DateTime @map("paid_at")
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  bookingId Int      @map("booking_id")
+
+  @@map("payments")
+}
+
+model Flight {
+  id                 Int       @id @default(autoincrement())
+  flightNumber       String    @map("flight_number")
+  departureTime      DateTime  @map("departure_time")
+  arrivalTime        DateTime  @map("arrival_time")
+  count              Int?
+  departureAirport   Airport   @relation("departure_airport", fields: [departureAirportId], references: [id])
+  departureAirportId Int       @map("departure_airport_id")
+  arrivalAirport     Airport   @relation("arrival_airport", fields: [arrivalAirportId], references: [id])
+  arrivalAirportId   Int       @map("arrival_airport_id")
+  airplane           Airplane? @relation(fields: [airplaneId], references: [id])
+  airplaneId         Int?      @map("airplane_id")
+  ticket             Ticket[]
+
+  @@map("flights")
+}
+
+model City {
+  id        Int       @id @default(autoincrement())
+  name      String
+  continent String?
+  imageUrl  String?   @map("image_url")
+  cityIata  String    @map("city_iata")
+  country   String
+  airport   Airport[]
+
+  @@map("cities")
+}
+
+model Airport {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  airportCode        String   @map("airport_code")
+  city               City     @relation(fields: [cityId], references: [id])
+  cityId             Int      @map("city_id")
+  airportAsDeparture Flight[] @relation("departure_airport")
+  airportAsArrival   Flight[] @relation("arrival_airport")
+
+  @@map("airports")
+}
+
+model Airplane {
+  id                Int                 @id @default(autoincrement())
+  model             String
+  passengerCapacity Int                 @map("passenger_capacity")
+  baggageCapacity   Int                 @map("baggage_capacity")
+  cabinCapacity     Int                 @map("cabin_capacity")
+  inFlightFacility  String              @map("in_flight_facility")
+  airline           Airline             @relation(fields: [airlineId], references: [id])
+  airlineId         Int                 @map("airline_id")
+  airplaneSeatClass AirplaneSeatClass[]
+  Flight            Flight[]
+
+  @@map("airplanes")
+}
+
+model Airline {
+  id          Int        @id @default(autoincrement())
+  name        String
+  airlineIata String     @map("airline_iata")
+  logoUrl     String?    @map("logo_url")
+  logoId      String?    @map("logo_id")
+  airplane    Airplane[]
+
+  @@map("airlines")
+}
+
+model AirplaneSeatClass {
+  id         Int      @id @default(autoincrement())
+  type       String
+  totalSeat  Int      @map("total_seat")
+  airplane   Airplane @relation(fields: [airplaneId], references: [id])
+  airplaneId Int      @map("airplane_id")
+  Ticket     Ticket[]
+
+  @@map("airplane_seat_class")
+}
+
+model Ticket {
+  id                  Int               @id @default(autoincrement())
+  price               Float
+  afterDiscountPrice  Float?            @map("after_discount_price")
+  flight              Flight            @relation(fields: [flightId], references: [id])
+  flightId            Int               @map("flight_id")
+  airplaneSeatClass   AirplaneSeatClass @relation(fields: [airplaneSeatClassId], references: [id])
+  airplaneSeatClassId Int               @map("airplane_seat_class_id")
+  promo               Promo?            @relation("promo", fields: [promoId], references: [id])
+  promoId             Int?              @map("promo_id")
+  departureFlight     Booking[]         @relation("departureTicket")
+  returnFlight        Booking[]         @relation("returnTicket")
+
+  @@map("tickets")
+}
+
+model Promo {
+  id         Int       @id @default(autoincrement())
+  name       String
+  discount   Float
+  validFrom  DateTime  @map("valid_from")
+  validUntil DateTime  @map("valid_until")
+  createdAt  DateTime? @map("created_at")
+  isActive   Boolean   @default(true) @map("is_active")
+  Ticket     Ticket[]  @relation("promo")
+
+  @@map("promos")
+}
+
+model Passenger {
+  id             Int       @id @default(autoincrement())
+  title          String
+  fullName       String    @map("full_name")
+  familyName     String?   @map("family_name")
+  birthDate      DateTime  @map("birth_date") @db.Date
+  nationality    String
+  identityType   String?   @map("identity_type")
+  issuingCountry String?   @map("issuing_country")
+  identityNumber String?   @map("identity_number")
+  expiredDate    DateTime? @map("expired_date")
+  ageGroup       AgeGroup  @map("age_group")
+  booking        Booking   @relation(fields: [bookingId], references: [id])
+  bookingId      Int       @map("booking_id")
+
+  @@map("passengers")
+}
+
+enum AgeGroup {
+  ADULT
+  CHILD
+  BABY
+}
