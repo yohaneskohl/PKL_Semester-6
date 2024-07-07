@@ -6,14 +6,11 @@ const prisma = new PrismaClient();
 const authRoutes = require('./auth.routes');
 const bookingRoutes = require('./booking.routes');
 const flightRoutes = require('./flight.routes');
-
-/* GET home page. */
-router.get('/', function (req, res, next) {
-  res.render('index', { title: 'Express' });
-});
+const paymentRoutes = require('./payment.routes')
 
 router.use('/api/v1/auth', authRoutes);
 router.use('/api/v1/bookings', bookingRoutes);
 router.use('/api/v1/flights', flightRoutes);
+router.use('/api/v1/payments', paymentRoutes);
 
 module.exports = router;
