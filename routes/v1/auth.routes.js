@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const auth = require('../../controllers/auth.controller.js');
+const auth = require('../../controllers/auth.controllers.js');
 const router = Router();
 const {
   restrict,
@@ -14,6 +14,7 @@ router.delete('/users', restrict, auth.deleteUser);
 
 router.post('/login', auth.login);
 router.post('/login-google', auth.LoginGoogle);
+
 
 router.post('/forgot-password', auth.sendResetPasswordEmail);
 router.post('/reset-password', auth.resetPassword);

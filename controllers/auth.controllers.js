@@ -111,6 +111,204 @@ module.exports = {
     }
   },
 
+  sendResetPasswordEmail: async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({
+          status: false,
+          message: `Field 'email' is required`,
+          data: null,
+        });
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, fullName: true },
+      });
+
+      if (!user) {
+        return res.status(400).json({
+          status: false,
+          message: 'Account with the corresponding email does not exist',
+          data: null,
+        });
+      }
+
+      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET_KEY, {
+        expiresIn: '30m',
+      });
+      const baseUrl = process.env.CLIENT_BASE_URL;
+      const html = getRenderedHtml('resetPasswordEmail', {
+        name: user.fullName,
+        resetPasswordUrl: `${baseUrl}/reset-password?token=${token}`,
+      });
+
+      await sendEmail({
+        to: email,
+        subject: 'Aviatick - Reset Password Confirmation',
+        html,
+      });
+
+      res.status(200).json({
+        status: true,
+        message: `Email sent to ${email}`,
+        data: null,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  resetPassword: async (req, res, next) => {
+    try {
+      const { token } = req.query;
+      if (!token) {
+        res.status(400).json({
+          status: false,
+          message: 'Token must be provided',
+          data: null,
+        });
+      }
+
+      const { password } = req.body;
+      if (!password) {
+        return res.status(400).json({
+          status: false,
+          message: `Field 'password' is required`,
+          data: null,
+        });
+      }
+
+      const MIN_PASSWORD_LENGTH = 6;
+      if (password.length < MIN_PASSWORD_LENGTH) {
+        return res.status(400).json({
+          status: false,
+          message: `Field 'password' must have minimum of ${MIN_PASSWORD_LENGTH} characters`,
+          data: null,
+        });
+      }
+
+      jwt.verify(token, process.env.JWT_SECRET_KEY, async (error, data) => {
+        if (error) {
+          return res.status(400).json({
+            status: false,
+            message:
+              error.name === 'TokenExpiredError'
+                ? 'Token is expired'
+                : `Invalid token: ${error.message}`,
+            data: null,
+          });
+        }
+
+        const { email } = await prisma.user.findFirst({
+          where: { id: data.id },
+          select: { email: true },
+        });
+
+        if (!email) {
+          return res.status(400).json({
+            status: false,
+            message: 'Invalid token',
+            data: null,
+          });
+        }
+
+        const hashedPassword = await generateHash(password);
+        const user = await prisma.user.update({
+          data: { password: hashedPassword },
+          where: { email },
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        });
+
+        res.status(200).json({
+          status: true,
+          message: 'Password updated',
+          data: user,
+        });
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  changePassword: async (req, res, next) => {
+    const { oldPassword, newPassword, confirmNewPassword } = req.body;
+    if (!oldPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({
+        status: false,
+        message: `Field 'oldPassword', 'newPassword', and 'confirmNewPassword' are required`,
+        data: null,
+      });
+    }
+
+    const { password: currentHashedPassword } = await prisma.user.findUnique({
+      where: {
+        email: req.user.email,
+      },
+      select: {
+        password: true,
+      },
+    });
+
+    const isCurrentPasswordMatch = await compareHash(
+      oldPassword,
+      currentHashedPassword
+    );
+    if (!isCurrentPasswordMatch) {
+      return res.status(400).json({
+        status: false,
+        message: `Field 'oldPassword' do not match the current password`,
+        data: null,
+      });
+    }
+
+    const MIN_PASSWORD_LENGTH = 6;
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({
+        status: false,
+        message: `Field 'newPassword' must have minimum of ${MIN_PASSWORD_LENGTH} characters`,
+        data: null,
+      });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({
+        status: false,
+        message: `Field 'newPassword' and 'confirmNewPassword' do not match`,
+        data: null,
+      });
+    }
+
+    if (oldPassword === newPassword) {
+      return res.status(400).json({
+        status: false,
+        message: 'New password could not be the same as old password',
+        data: null,
+      });
+    }
+
+    const newHashedPassword = await generateHash(newPassword);
+    await prisma.user.update({
+      data: {
+        password: newHashedPassword,
+      },
+      where: {
+        email: req.user.email,
+      },
+    });
+
+    res.status(200).json({
+      status: true,
+      message: 'Password changed',
+      data: null,
+    });
+  },
+  
   updateUserProfile: async (req, res, next) => {
     try {
       const { id } = req.user;
