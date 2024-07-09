@@ -2,8 +2,7 @@ const { Router } = require('express');
 const auth = require('../../controllers/auth.controllers.js');
 const router = Router();
 const {
-  restrict,
-  isUser,
+  restrict
 } = require('../../middlewares/auth.middleware');
 
 router.post('/register', auth.register);
