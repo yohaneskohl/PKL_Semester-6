@@ -8,7 +8,6 @@ const {
   PAYMENT_PROD_CLIENT_KEY,
   PAYMENT_PROD_SERVER_KEY,
 } = process.env;
-const { CLIENT_BASE_URL } = process.env;
 
 // Setting the environment (true for production, false for development)
 const isProduction = false;
@@ -46,6 +45,8 @@ async function createPaymentMidtrans(bookingId, paymentMethod) {
       throw new Error('Booking has already been paid');
     }
 
+    const baseUrl = `http://localhost:3000`;
+
     const parameter = {
       transaction_details: {
         order_id: `BOOKING with ID ${checkBook.id}-${Date.now()}`,
@@ -59,10 +60,10 @@ async function createPaymentMidtrans(bookingId, paymentMethod) {
         email: checkBook.user.email,
         phone: checkBook.user.phoneNumber,
       },
-      callbacks: {
-        finish: `${CLIENT_BASE_URL}/success`,
-        unfinish: `${CLIENT_BASE_URL}/riwayat-pemesanan`,
-        cancel: `${CLIENT_BASE_URL}/error`,
+      callback_url: {
+        finish: `${baseUrl}`,
+        unfinish: `${baseUrl}`,
+        cancel: `${baseUrl}`,
       },
     };
 
