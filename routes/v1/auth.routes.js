@@ -1,9 +1,7 @@
 const { Router } = require('express');
 const auth = require('../../controllers/auth.controllers.js');
 const router = Router();
-const {
-  restrict
-} = require('../../middlewares/auth.middleware');
+const { restrict } = require('../../middlewares/auth.middleware');
 
 router.post('/register', auth.register);
 router.post('/verify-otp', auth.verifyOtp);
@@ -24,4 +22,3 @@ router.get('/users/:id', restrict, auth.getUserById);
 router.get('/users', restrict, auth.getAll);
 
 module.exports = router;
-

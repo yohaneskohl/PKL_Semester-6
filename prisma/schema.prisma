@@ -3,9 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -182,13 +182,11 @@ model Ticket {
   flightId            Int               @map("flight_id")
   airplaneSeatClass   AirplaneSeatClass @relation(fields: [airplaneSeatClassId], references: [id])
   airplaneSeatClassId Int               @map("airplane_seat_class_id")
-  promoId             Int?              @map("promo_id")
   departureFlight     Booking[]         @relation("departureTicket")
   returnFlight        Booking[]         @relation("returnTicket")
 
   @@map("tickets")
 }
-
 
 model Passenger {
   id             Int       @id @default(autoincrement())

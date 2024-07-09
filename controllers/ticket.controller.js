@@ -39,16 +39,11 @@ module.exports = {
         },
       });
 
-      const formattedTickets = tickets.map((ticket) => getFormattedTicket(ticket));
-      const count = await prisma.ticket.count({
-        where: isPromo ? { promoId: { not: null } } : {},
-      });
-      const pagination = getPagination(
-        req,
-        parseInt(page),
-        parseInt(limit),
-        count
+      const formattedTickets = tickets.map((ticket) =>
+        getFormattedTicket(ticket)
       );
+
+      const pagination = getPagination(req, parseInt(page), parseInt(limit));
 
       res.status(200).json({
         status: true,
@@ -59,13 +54,13 @@ module.exports = {
       next(error);
     }
   },
-  
+
   getById: async (req, res, next) => {
     try {
       const { id } = req.params;
       const ticket = await prisma.ticket.findUnique({
         where: {
-          id: parseInt(id)
+          id: parseInt(id),
         },
         include: {
           airplaneSeatClass: {
@@ -91,21 +86,21 @@ module.exports = {
               },
             },
           },
-        }
+        },
       });
 
       if (!ticket) {
         return res.status(404).json({
           status: false,
           message: `Ticket record with id ${id} does not exist`,
-          data: null
+          data: null,
         });
       }
 
       return res.status(200).json({
-        status: true, 
+        status: true,
         message: `Successfully fetched ticket with id ${id}`,
-        data: getFormattedTicket(ticket)
+        data: getFormattedTicket(ticket),
       });
     } catch (error) {
       next(error);
@@ -203,7 +198,9 @@ module.exports = {
         },
       });
 
-      const formattedTickets = tickets.map((ticket) => getFormattedTicket(ticket));
+      const formattedTickets = tickets.map((ticket) =>
+        getFormattedTicket(ticket)
+      );
       const count = await prisma.ticket.count({ where: searchFilter });
       const pagination = getPagination(
         req,
@@ -221,6 +218,102 @@ module.exports = {
       next(error);
     }
   },
+
+  favoriteDestinations: async (req, res, next) => {
+    try {
+      const {
+        page = req.query.page || 1,
+        limit = req.query.limit || 5,
+        arrivalContinent,
+      } = req.query;
+
+      const parsedPage = parseInt(page);
+      const parsedLimit = parseInt(limit);
+
+      let flightFilter = {
+        count: {
+          gt: 0,
+        },
+      };
+      if (arrivalContinent) {
+        flightFilter = {
+          ...flightFilter,
+          arrivalAirport: {
+            city: {
+              continent: arrivalContinent,
+            },
+          },
+        };
+      }
+
+      const getFavorite = await prisma.flight.findMany({
+        where: flightFilter,
+        orderBy: {
+          count: 'desc',
+        },
+        include: {
+          departureAirport: {
+            include: {
+              city: true,
+            },
+          },
+          arrivalAirport: {
+            include: {
+              city: true,
+            },
+          },
+          ticket: {
+            include: {
+              airplaneSeatClass: {
+                include: {
+                  airplane: {
+                    include: {
+                      airline: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        skip: (parseInt(page) - 1) * parseInt(limit),
+        take: parseInt(limit),
+      });
+
+      const result = getFavorite.map((flight) => ({
+        flightId: flight.id,
+        flightNumber: flight.flightNumber,
+        departureCity: flight.departureAirport.city.name,
+        departureContinent: flight.departureAirport.city.continent,
+        arrivalCity: flight.arrivalAirport.city.name,
+        arrivalContinent: flight.arrivalAirport.city.continent,
+        arrivalCityImageUrl: flight.arrivalAirport.city.imageUrl,
+        departureTime: flight.departureTime,
+        arrivalTime: flight.arrivalTime,
+        airline: flight.ticket[0]?.airplaneSeatClass?.airplane?.airline?.name,
+        airlineLogo:
+          flight.ticket[0]?.airplaneSeatClass?.airplane?.airline?.logoUrl,
+        price: flight.ticket.length > 0 ? flight.ticket[0].price : null,
+        count: flight.count,
+        ticketId: flight.ticket.map((t) => t.id),
+      }));
+
+      const count = await prisma.flight.count({
+        where: flightFilter,
+      });
+
+      const pagination = getPagination(req, parsedPage, parsedLimit, count);
+
+      return res.status(200).json({
+        status: true,
+        message: 'Favorite destinations retrieved successfully',
+        data: result,
+        pagination,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 function getFormattedTicket(ticket) {
@@ -228,7 +321,6 @@ function getFormattedTicket(ticket) {
     id: ticket.id,
     price: ticket.price,
     afterDiscountPrice: ticket.afterDiscountPrice,
-    promo: ticket.promoId,
     flight: {
       id: ticket.flight.id,
       code: ticket.flight.flightNumber,
