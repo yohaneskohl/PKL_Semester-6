@@ -7,10 +7,12 @@ const authRoutes = require('./auth.routes');
 const bookingRoutes = require('./booking.routes');
 const flightRoutes = require('./flight.routes');
 const paymentRoutes = require('./payment.routes')
+const airlineRoutes = require('./airline.routes');
 
 router.use('/api/v1/auth', authRoutes);
 router.use('/api/v1/bookings', bookingRoutes);
 router.use('/api/v1/flights', flightRoutes);
 router.use('/api/v1/payments', paymentRoutes);
+router.use('/api/v1/airlines', airlineRoutes);
 
 module.exports = router;
