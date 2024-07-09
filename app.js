@@ -21,7 +21,7 @@ app.use(cookieParser());
 app.use(router)
 
 app.get('/', (req, res) => {
-  res.send('<h1> Hello world </h1>');
+  res.send('<h1> PKL SMT 6 </h1>');
 });
 
 // 500 error handler
