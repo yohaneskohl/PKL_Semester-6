@@ -454,4 +454,158 @@ module.exports = {
       next(error);
     }
   },
+
+  login: async (req, res, next) => {
+    try {
+      let { emailOrPhoneNumber, password } = req.body;
+
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: emailOrPhoneNumber },
+            { phoneNumber: emailOrPhoneNumber },
+          ],
+        },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          status: false,
+          message: 'Account not found',
+          data: null,
+        });
+      }
+
+      let isPasswordCorrect = await compareHash(password, user.password);
+      if (!isPasswordCorrect) {
+        return res.status(400).json({
+          status: false,
+          message: 'Invalid Email or Password',
+          data: null,
+        });
+      }
+      delete user.password;
+
+      let token = jwt.sign(user, JWT_SECRET_KEY);
+
+      req.user = { ...user, token };
+
+      if (!user.password && user.googleId) {
+        return res.status(401).json({
+          status: false,
+          message: 'Authentication failed. Please use Google OAuth to log in',
+          data: null,
+        });
+      }
+
+      if (!user.emailIsVerified) {
+        return res.status(403).json({
+          status: false,
+          message: 'Your account is not verified',
+          data: null,
+        });
+      }
+
+      const convertCreatedAt = new Date();
+      const convertUTCCreatedAt = new Date(
+        convertCreatedAt.getTime() + 7 * 60 * 60 * 1000
+      ).toISOString();
+
+      await prisma.notification.create({
+        data: {
+          title: 'Login Successfully',
+          message: 'You have successfully logged in',
+          type: 'general',
+          createdAt: convertUTCCreatedAt,
+          userId: user.id,
+        },
+      });
+
+      return res.status(200).json({
+        status: true,
+        message: 'Login Successfully',
+        data: {
+          user: user,
+          token: token,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  LoginGoogle: async (req, res, next) => {
+    try {
+      // Destructures 'access_token' from the request body
+      const { access_token } = req.body;
+
+      if (!access_token) {
+        return res.status(400).json({
+          status: false,
+          message: 'Missing required field',
+          data: null,
+        });
+      }
+
+      // Gets Google user data using the access token
+      const googleData = await axios.get(
+        `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${access_token}`
+      );
+
+      // Extracts the full name and family name from the Google data
+      const fullName = googleData?.data?.name;
+      const { firstName, familyName } = separateName(fullName);
+
+      // Upserts user data in case the user already exists in the database
+      const user = await prisma.user.upsert({
+        where: {
+          email: googleData?.data?.email,
+        },
+        update: {
+          fullName: firstName,
+          familyName: familyName,
+          googleId: googleData?.data?.sub,
+          emailIsVerified: true,
+        },
+        create: {
+          email: googleData?.data?.email,
+          fullName: firstName,
+          familyName: familyName,
+          password: '',
+          emailIsVerified: true,
+          googleId: googleData?.data?.sub,
+        },
+      });
+
+      // Deletes the user's password from the user object for security reasons
+      delete user.password;
+
+      // Creates a JWT token for the user
+      const token = jwt.sign(user, JWT_SECRET_KEY);
+
+      // Returns a successful response with the user data and token
+      return res.status(200).json({
+        status: true,
+        message: 'Successfully login with Google',
+        data: {
+          user,
+          token,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  verified: async (req, res, next) => {
+    try {
+      return res.status(200).json({
+        status: true,
+        message: 'User verified successfully',
+        data: req.user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

@@ -3,7 +3,6 @@ const auth = require('../../controllers/auth.controllers.js');
 const router = Router();
 const {
   restrict,
-  isAdmin,
   isUser,
 } = require('../../middlewares/auth.middleware');
 
@@ -22,10 +21,8 @@ router.post('/change-password', restrict, auth.changePassword);
 router.get('/verified', restrict, auth.verified);
 router.put('/users/profile', restrict, auth.updateUserProfile);
 router.get('/users/profile', restrict, auth.getUserByToken);
-
-// Admin
-router.get('/users/:id', restrict, isAdmin, auth.getUserById);
-router.get('/users', restrict, isAdmin, auth.getAll);
+router.get('/users/:id', restrict, auth.getUserById);
+router.get('/users', restrict, auth.getAll);
 
 module.exports = router;
 
