@@ -1666,7 +1666,7 @@ paths:
                       next:
                         type: string
                         nullable: true
-                        example: http://localhost:3000/api/v1/flight/favorite?page=2&limit=5
+                        example: http://localhost:3000/api/v1/tickets/favorite?page=2&limit=5
                       prev:
                         type: string
                         nullable: true
