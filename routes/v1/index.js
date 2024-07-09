@@ -28,6 +28,12 @@ const file = fs.readFileSync(swagger_path, 'utf-8');
 
 const swaggerDocument = yaml.parse(file);
 
+router.use(
+  '/api/v1/api-docs',
+  swaggerUI.serve,
+  swaggerUI.setup(swaggerDocument, { customCssUrl, customJs })
+);
+
 router.use('/api/v1/auth', authRoutes);
 router.use('/api/v1/bookings', bookingRoutes);
 router.use('/api/v1/flights', flightRoutes);
