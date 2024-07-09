@@ -28,3 +28,4 @@ router.get('/users/:id', restrict, isAdmin, auth.getUserById);
 router.get('/users', restrict, isAdmin, auth.getAll);
 
 module.exports = router;
+
