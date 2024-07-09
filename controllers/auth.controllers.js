@@ -608,4 +608,53 @@ module.exports = {
       next(error);
     }
   },
+
+  getUserById: async (req, res, next) => {
+    try {
+      const id = Number(req.params.id);
+      const user = await prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          status: false,
+          message: `User with ID ${id} not found`,
+          data: null,
+        });
+      }
+      return res.status(200).json({
+        status: true,
+        message: 'User fetched successfully',
+        data: user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+  
+  getUserByToken: async (req, res, next) => {
+    try {
+      const id = req.user.id;
+      const user = await prisma.user.findUnique({
+        where: { id: id },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          status: false,
+          message: 'User not found',
+          data: null,
+        });
+      }
+
+      return res.status(200).json({
+        status: true,
+        message: 'User profile fetched successfully',
+        data: user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
