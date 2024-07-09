@@ -111,6 +111,100 @@ module.exports = {
     }
   },
 
+  verifyOtp: async (req, res, next) => {
+    try {
+      let { email, otp } = req.body;
+
+      let user = await prisma.user.findUnique({ where: { email } });
+
+      if (!user) {
+        return res.status(400).json({
+          status: false,
+          message: 'Invalid email or OTP',
+          data: null,
+        });
+      }
+
+      let otpRecord = await prisma.otp.findUnique({
+        where: { userId: user.id },
+      });
+
+      if (otpRecord.code.toString() !== otp.toString()) {
+        return res.status(401).json({
+          status: false,
+          message: 'Invalid OTP',
+          data: null,
+        });
+      }
+
+      await prisma.otp.delete({ where: { userId: user.id } });
+
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: { emailIsVerified: true },
+      });
+
+      return res.status(200).json({
+        status: true,
+        message: 'OTP verified successfully',
+        data: updatedUser,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  resendOtp: async (req, res, next) => {
+    try {
+      let { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          status: false,
+          message: 'Email is required',
+          data: null,
+        });
+      }
+
+      const user = await prisma.user.findFirst({ where: { email } });
+
+      if (!user) {
+        return res.status(401).json({
+          status: false,
+          message: 'User not found',
+          data: null,
+        });
+      }
+
+      const newOtp = otp.generateOTP().toString();
+
+      const convertCreatedAt = new Date();
+      const convertUTCCreatedAt = new Date(
+        convertCreatedAt.getTime() + 7 * 60 * 60 * 1000
+      ).toISOString();
+
+      const updateOtpUser = await prisma.otp.update({
+        where: { userId: user.id },
+        data: { code: newOtp, createdAt: convertUTCCreatedAt },
+      });
+
+      const html = getRenderedHtml('otp-email', {
+        fullName: user.fullName,
+        otp: newOtp,
+      });
+
+      await sendEmail({ to: email, subject: 'Your OTP Code', html });
+
+      return res.status(200).json({
+        status: true,
+        message: 'OTP resent successfully',
+        data: updateOtpUser,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   sendResetPasswordEmail: async (req, res, next) => {
     try {
       const { email } = req.body;
@@ -603,6 +697,55 @@ module.exports = {
         status: true,
         message: 'User verified successfully',
         data: req.user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getUserById: async (req, res, next) => {
+    try {
+      const id = Number(req.params.id);
+      const user = await prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          status: false,
+          message: `User with ID ${id} not found`,
+          data: null,
+        });
+      }
+      return res.status(200).json({
+        status: true,
+        message: 'User fetched successfully',
+        data: user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  getUserByToken: async (req, res, next) => {
+    try {
+      const id = req.user.id;
+      const user = await prisma.user.findUnique({
+        where: { id: id },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          status: false,
+          message: 'User not found',
+          data: null,
+        });
+      }
+
+      return res.status(200).json({
+        status: true,
+        message: 'User profile fetched successfully',
+        data: user,
       });
     } catch (error) {
       next(error);

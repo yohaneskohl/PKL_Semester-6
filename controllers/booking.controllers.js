@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const crypto = require('crypto');
 const { convertDate } = require('../utils/formatedDate');
-const { createPaymentMidtrans } = require('../controllers/payment.controller');
+const { createPaymentMidtrans } = require('../controllers/payment.controllers');
 const separateName = require('../utils/separateName');
 
 module.exports = {

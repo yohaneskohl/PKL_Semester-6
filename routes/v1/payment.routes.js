@@ -2,7 +2,7 @@ const router = require('express').Router();
 const {
   confirmPayment,
   createPaymentMidtransHandler
-} = require('../../controllers/payment.controller');
+} = require('../../controllers/payment.controllers');
 const { restrict } = require('../../middlewares/auth.middleware');
 
 router.post('/midtrans/confirm', confirmPayment);
