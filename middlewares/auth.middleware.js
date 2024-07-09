@@ -30,26 +30,6 @@ module.exports = {
       next(error);
     }
   },
-  isAdmin: (req, res, next) => {
-    if (req.user.role !== 'ADMIN') {
-      return res.status(403).json({
-        status: false,
-        message: 'You are not authorized to access this resource',
-        data: null,
-      });
-    }
-    next();
-  },
-  isUser: (req, res, next) => {
-    if (req.user.role !== 'USER') {
-      return res.status(403).json({
-        status: false,
-        message: 'You are not authorized to access this resource',
-        data: null,
-      });
-    }
-    next();
-  },
   isUserOrAdmin: (req, res, next) => {
     if (req.user.role !== 'USER' && req.user.role !== 'ADMIN') {
       return res.status(403).json({
