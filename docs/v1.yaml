@@ -1761,7 +1761,7 @@ paths:
         - bearerAuth: []
   
 
-  /bookings/new-booking/{tripType}:
+  /bookings/booking/{tripType}:
     post:
       summary: Create a new booking
       tags: 
