@@ -32,5 +32,6 @@ router.put('/users/profile', restrict, auth.updateUserProfile);
 router.get('/users/profile', restrict, auth.getUserByToken);
 router.get('/users/:id', restrict, auth.getUserById);
 router.get('/users', restrict, auth.getAll);
+router.delete('/users/:id', restrict, auth.deleteUser);
 
 module.exports = router;
