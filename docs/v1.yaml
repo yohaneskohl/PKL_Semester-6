@@ -941,25 +941,30 @@ paths:
                 $ref: '#/components/schemas/User'
       security:
         - bearerAuth: []
-  /auth/login-google:
-    post:
+  /auth/google:
+    get:
       tags:
-        - 'Auth'
-      summary: Login by Google
-      description: Login by Google by Access Token (Google Playground -> OAuth2 -> userinfo.email and userinfo.profile checked)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                access_token:
-                  type: string
-                  example: ya29.a0AXooCgsJUw2LZB7y5pTKZK7NPEUM7ehfBs-6AaF6Jj3MsOPT1ih4NoemDxDBR2KETaS2YulZ62IuPcmtsE_04vOfsL85qhdKFysCDunvrGAdwh68huXM7_42leXW0tlKlk4hWO64nYNYqsJjVoYvaKCEVfqP-TOBmCDOaCgYKAVMSARISFQHGX2Mixra-LLm6wRoWlIQNS_wAyw0171
+        - Auth
+      summary: Login with Google
       responses:
         200:
-          description: Success
+          description: Redirect to Google login page
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+  /auth/google/callback:
+    get:
+      tags:
+        - Auth
+      summary: Callback for Google login
+      responses:
+        200:
+          description: Successfully logged in with Google
           content:
             application/json:
               schema:
@@ -970,56 +975,15 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: Successfully login with Google
+                    example: Successfully logged in with Google
                   data:
                     type: object
                     properties:
                       user:
-                        type: object
-                        properties:
-                          id:
-                            type: string
-                            example: 7e775854-aad8-4ad5-89f1-09b7b3481ba3
-                          name:
-                            type: string
-                            example: John Doe
-                          email:
-                            type: string
-                            example: example@gmail.com
-                          is_verified:
-                            type: boolean
-                            example: true
-                          role:
-                            type: string
-                            example: USER
-                          createdAt:
-                            type: string
-                            format: datetime
-                            example: '2024-05-29T15:20:20.554Z'
-                          updatedAt:
-                            type: string
-                            format: datetime
-                            example: '2024-05-29T15:20:20.554Z'
-
+                        $ref: '#/components/schemas/User'
                       token:
                         type: string
-                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjdlNzc1ODU0LWFhZDgtNGFkNS04OWYxLTA5YjdiMzQ4MWJhMyIsIm5hbWUiOiJEZXdhbmdnYSBOYW5kYSBBcmp1bmEiLCJlbWFpbCI6ImFkZXdhbmdnYW5AZ21haWwuY29tIiwiaXNfdmVyaWZpZWQiOnRydWUsInJvbGUiOiJVU0VSIiwiY3JlYXRlZEF0IjoiMjAyNC0wNS0yOVQxNToyMDoyMC41NTRaIiwidXBkYXRlZEF0IjoiMjAyNC0wNS0yOVQxNToyMDoyMC41NTRaIiwiaWF0IjoxNzE2OTk2MDIwfQ.pz1Ilx4MRkMDrpt-ol5FIoTjP4U1f_Z-WOn_yTg-CDw
-
-        400:
-          description: Input must be required
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Missing required field
-                  data:
-                    example: ~
+                        example: 2304b11f-fd1f-425e-b481-ced5e3f349c6
 
   /auth/forgot-password:
     post:
