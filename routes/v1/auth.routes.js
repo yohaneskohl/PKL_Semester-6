@@ -2,6 +2,7 @@ const { Router } = require('express');
 const auth = require('../../controllers/auth.controllers.js');
 const router = Router();
 const { restrict } = require('../../middlewares/auth.middleware');
+const passport = require('../../libs/passport');
 
 router.post('/register', auth.register);
 router.post('/verify-otp', auth.verifyOtp);
@@ -9,7 +10,18 @@ router.post('/resend-otp', auth.resendOtp);
 router.delete('/users', restrict, auth.deleteUser);
 
 router.post('/login', auth.login);
-router.post('/login-google', auth.LoginGoogle);
+router.get(
+  '/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+router.get(
+  '/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: '/google',
+    session: false,
+  }),
+  auth.googleLogin
+);
 
 
 router.post('/forgot-password', auth.sendResetPasswordEmail);
